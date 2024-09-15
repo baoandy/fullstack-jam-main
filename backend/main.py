@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from starlette.middleware.cors import CORSMiddleware
 
 from backend.db import database
-from backend.routes import collections, companies
+from backend.redis.redis import get_redis
+from backend.routes import collections, companies, user_actions, websocket
 
 
 @asynccontextmanager
@@ -20,6 +21,10 @@ async def lifespan(app: FastAPI):
         db.add(database.Settings(setting_name="seeded"))
         db.commit()
         db.close()
+
+    # Initialize Redis
+    app.state.redis = get_redis()
+
     yield
     # Clean up...
 
@@ -93,7 +98,8 @@ EXECUTE FUNCTION throttle_updates();
 
 app.include_router(companies.router)
 app.include_router(collections.router)
-
+app.include_router(user_actions.router)
+app.include_router(websocket.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

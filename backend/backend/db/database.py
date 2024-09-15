@@ -17,13 +17,27 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-SQLALCHEMY_DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL')  # Ensure this uses the async dialect
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
+    DATABASE_URL,
+    echo=False,
 )
+
+async_engine = create_async_engine(
+    DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://"),
+    echo=False,
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+AsyncSessionLocal = sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
 
 def get_db():
     db = SessionLocal()
@@ -31,6 +45,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+async def get_async_db():
+    async with AsyncSessionLocal() as db:
+        try:
+            yield db
+        finally:
+            await db.close()
 
 
 # SQLAlchemy models
