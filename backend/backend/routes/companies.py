@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -32,10 +32,9 @@ def fetch_companies_with_liked(
 
     liked_associations = (
         db.query(database.CompanyCollectionAssociation)
+        .join(database.Company, database.Company.id == database.CompanyCollectionAssociation.company_id)
         .filter(database.Company.id.in_(company_ids))
-        .filter(
-            database.CompanyCollectionAssociation.collection_id == liked_list.id,
-        )
+        .filter(database.CompanyCollectionAssociation.collection_id == liked_list.id)
         .all()
     )
 
